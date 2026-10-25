@@ -1,0 +1,2059 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NCCTG Lung Cancer Survival Analytics | Clinical Prognostic Platform</title>
+
+    <!-- Preload visual background for instant render -->
+    <link rel="preload" as="image" href="{{ url_for('static', filename='images/lung-background.jpeg') }}">
+
+    <!-- Modern Typography: Inter for clean UI, JetBrains Mono for statistical precision -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            /* Clinical Dark Navy & Cyan Palette */
+            --bg-base: #060a12;
+            --bg-deep: #080e1a;
+            --bg-card: rgba(13, 21, 37, 0.78);
+            --bg-card-hover: rgba(17, 28, 48, 0.88);
+            --bg-card-solid: #0d1525;
+            --bg-header: rgba(9, 15, 27, 0.92);
+            --bg-input: #080d18;
+
+            /* Text Hierarchy */
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+
+            /* Medical Cyan & Blue Accents */
+            --accent-cyan: #38bdf8;
+            --accent-teal: #06b6d4;
+            --accent-blue-deep: #0284c7;
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+
+            /* Glow & Border Systems */
+            --cyan-glow: 0 0 20px rgba(56, 189, 248, 0.35);
+            --cyan-glow-subtle: 0 0 12px rgba(56, 189, 248, 0.18);
+            --card-border: rgba(56, 189, 248, 0.18);
+            --card-border-hover: rgba(56, 189, 248, 0.45);
+            --card-border-subtle: rgba(255, 255, 255, 0.08);
+
+            /* Risk Indicators */
+            --risk-low-bg: rgba(6, 78, 59, 0.65);
+            --risk-low-border: #10b981;
+            --risk-med-bg: rgba(120, 53, 15, 0.65);
+            --risk-med-border: #f59e0b;
+            --risk-high-bg: rgba(136, 19, 55, 0.65);
+            --risk-high-border: #f43f5e;
+
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 22px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--text-secondary);
+            line-height: 1.55;
+            min-height: 100vh;
+            background-color: var(--bg-base);
+            background-image:
+                linear-gradient(rgba(6, 11, 22, 0.62), rgba(7, 14, 28, 0.76)),
+                url("{{ url_for('static', filename='images/lung-background.jpeg') }}");
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Bioluminescent Tech Mesh Overlay */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.12) 0%, transparent 45%),
+                radial-gradient(circle at 82% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 40%),
+                linear-gradient(rgba(56, 189, 248, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(56, 189, 248, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* =========================================================
+           TOP CLINICAL NAVIGATION BAR
+        ========================================================= */
+        .top-navbar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: var(--bg-header);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid var(--card-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65);
+        }
+
+        .navbar-content {
+            max-width: 1420px;
+            margin: 0 auto;
+            padding: 16px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .brand-icon-wrapper {
+            position: relative;
+            width: 50px;
+            height: 50px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(6, 182, 212, 0.05));
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            box-shadow: var(--cyan-glow-subtle);
+            color: var(--accent-cyan);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .brand-icon-wrapper:hover {
+            box-shadow: var(--cyan-glow);
+            transform: translateY(-2px) scale(1.03);
+            border-color: var(--accent-cyan);
+        }
+
+        .brand-text h1 {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.025em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            line-height: 1.25;
+        }
+
+        .brand-text h1 .research-tag {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            background: rgba(56, 189, 248, 0.14);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            color: var(--accent-cyan);
+        }
+
+        .brand-text p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            letter-spacing: 0.01em;
+            margin-top: 2px;
+        }
+
+        .status-strip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(13, 21, 37, 0.85);
+            border: 1px solid var(--card-border);
+            padding: 7px 15px;
+            border-radius: 9999px;
+            font-size: 0.77rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            transition: all 0.25s ease;
+        }
+
+        .status-pill.engine-pill {
+            border-color: rgba(56, 189, 248, 0.45);
+            color: var(--text-primary);
+            background: linear-gradient(135deg, rgba(13, 21, 37, 0.95), rgba(8, 14, 26, 0.95));
+        }
+
+        .status-pill.engine-pill strong {
+            color: var(--accent-cyan);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            margin-left: 2px;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent-emerald);
+            box-shadow: 0 0 10px var(--accent-emerald);
+            animation: pulse-ring 2.2s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.9);
+                opacity: 0.8;
+            }
+
+            50% {
+                transform: scale(1.25);
+                opacity: 1;
+                box-shadow: 0 0 14px var(--accent-emerald);
+            }
+
+            100% {
+                transform: scale(0.9);
+                opacity: 0.8;
+            }
+        }
+
+        /* =========================================================
+           MAIN CONTAINER & LAYOUT
+        ========================================================= */
+        .main-container {
+            position: relative;
+            z-index: 10;
+            max-width: 1420px;
+            margin: 0 auto;
+            padding: 30px 24px 64px;
+        }
+
+        /* =========================================================
+           COHORT SUMMARY STAT BANNER
+        ========================================================= */
+        .cohort-banner {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+            margin-bottom: 26px;
+        }
+
+        .cohort-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cohort-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4), transparent);
+            opacity: 0.5;
+            transition: opacity 0.25s ease;
+        }
+
+        .cohort-card:hover {
+            border-color: var(--card-border-hover);
+            transform: translateY(-3px);
+            box-shadow: 0 14px 32px rgba(0, 0, 0, 0.65), var(--cyan-glow-subtle);
+        }
+
+        .cohort-card:hover::before {
+            opacity: 1;
+            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+        }
+
+        .cohort-icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            background: rgba(8, 13, 24, 0.9);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-cyan);
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .cohort-card.red-metric .cohort-icon-box {
+            color: var(--accent-rose);
+            border-color: rgba(244, 63, 94, 0.35);
+        }
+
+        .cohort-card.green-metric .cohort-icon-box {
+            color: var(--accent-emerald);
+            border-color: rgba(16, 185, 129, 0.35);
+        }
+
+        .cohort-card.blue-metric .cohort-icon-box {
+            color: var(--accent-cyan);
+            border-color: rgba(56, 189, 248, 0.35);
+        }
+
+        .cohort-meta {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .cohort-meta .value {
+            font-size: 1.55rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.15;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: -0.02em;
+        }
+
+        .cohort-meta .label {
+            font-size: 0.77rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-top: 3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .cohort-badge {
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Error Alert Box */
+        .error-alert {
+            background: rgba(136, 19, 55, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--accent-rose);
+            border-radius: var(--radius-md);
+            padding: 14px 20px;
+            color: #ffe4e6;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 8px 24px rgba(244, 63, 94, 0.25);
+            font-size: 0.89rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Research Prototype Clinical Disclaimer Banner */
+        .disclaimer-banner {
+            background: rgba(13, 21, 37, 0.85);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(245, 158, 11, 0.45);
+            border-left: 4px solid var(--accent-amber);
+            border-radius: var(--radius-md);
+            padding: 12px 18px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+            font-size: 0.84rem;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .disclaimer-banner strong {
+            color: var(--accent-amber);
+            font-weight: 700;
+        }
+
+        /* =========================================================
+           TWO-COLUMN WORKSPACE GRID
+        ========================================================= */
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: 470px 1fr;
+            gap: 26px;
+            align-items: start;
+        }
+
+        /* Universal Card Container */
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-xl);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .card:hover {
+            border-color: var(--card-border-hover);
+        }
+
+        .card-header-styled {
+            padding: 22px 26px;
+            background: var(--bg-header);
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .card-header-styled h2 {
+            font-size: 1.14rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: -0.015em;
+        }
+
+        .card-header-styled h2 svg {
+            color: var(--accent-cyan);
+            flex-shrink: 0;
+        }
+
+        .card-header-styled p {
+            font-size: 0.79rem;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        .card-body {
+            padding: 26px;
+        }
+
+        /* =========================================================
+           QUICK PRESETS BAR & BUTTONS
+        ========================================================= */
+        .presets-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 14px;
+            background: rgba(8, 13, 24, 0.7);
+            border: 1px solid var(--card-border-subtle);
+            border-radius: var(--radius-md);
+            margin-bottom: 22px;
+            flex-wrap: wrap;
+        }
+
+        .preset-title {
+            font-size: 0.74rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-right: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .preset-btn {
+            background: rgba(13, 21, 37, 0.95);
+            border: 1px solid rgba(203, 213, 225, 0.22);
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.76rem;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--accent-cyan);
+            box-shadow: var(--cyan-glow-subtle);
+            color: var(--text-primary);
+            background: rgba(18, 29, 52, 0.95);
+            transform: translateY(-1px);
+        }
+
+        .preset-btn:active {
+            transform: translateY(0);
+        }
+
+        .preset-toast {
+            font-size: 0.73rem;
+            color: var(--accent-emerald);
+            font-weight: 600;
+            margin-left: auto;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .preset-toast.visible {
+            opacity: 1;
+        }
+
+        /* =========================================================
+           CLINICAL PARAMETER FORM CONTROLS
+        ========================================================= */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .form-label span.scale-hint {
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: var(--accent-cyan);
+            background: rgba(56, 189, 248, 0.08);
+            padding: 1px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .form-control {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid rgba(203, 213, 225, 0.22);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            transition: all 0.22s ease;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: var(--cyan-glow-subtle), inset 0 2px 4px rgba(0, 0, 0, 0.4);
+            background: #09101c;
+        }
+
+        select.form-control {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 38px;
+            cursor: pointer;
+        }
+
+        select.form-control option {
+            background-color: #0d1525;
+            color: #f8fafc;
+        }
+
+        .field-desc {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            line-height: 1.35;
+        }
+
+        /* =========================================================
+           PRIMARY ACTION BUTTONS
+        ========================================================= */
+        .btn-submit-primary {
+            width: 100%;
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #075985 100%);
+            border: 1px solid var(--accent-cyan);
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.96rem;
+            font-weight: 700;
+            padding: 14px 24px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(2, 132, 199, 0.45);
+            letter-spacing: -0.01em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-submit-primary::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .btn-submit-primary:hover {
+            background: linear-gradient(135deg, #0369a1 0%, #0284c7 50%, #38bdf8 100%);
+            box-shadow: var(--cyan-glow), 0 8px 26px rgba(2, 132, 199, 0.55);
+            transform: translateY(-2px);
+        }
+
+        .btn-submit-primary:hover::after {
+            left: 100%;
+        }
+
+        .btn-submit-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-submit-primary svg {
+            color: #ffffff;
+            transition: transform 0.2s ease;
+        }
+
+        .btn-submit-primary:hover svg {
+            transform: scale(1.15) rotate(-5deg);
+        }
+
+        /* Secondary PDF Download Button */
+        .btn-download-pdf {
+            width: 100%;
+            background: rgba(13, 21, 37, 0.9);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 600;
+            padding: 12px 20px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.22s ease;
+            margin-top: 14px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn-download-pdf:hover {
+            border-color: var(--accent-cyan);
+            box-shadow: var(--cyan-glow-subtle);
+            color: var(--text-primary);
+            background: rgba(18, 30, 52, 0.95);
+            transform: translateY(-1px);
+        }
+
+        .btn-download-pdf svg {
+            color: var(--accent-cyan);
+        }
+
+        /* =========================================================
+           RIGHT COLUMN: PROGNOSTIC RESULTS STYLING
+        ========================================================= */
+
+        /* Risk Stratification Indicator */
+        .risk-banner-card {
+            border-radius: var(--radius-lg);
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            border: 1px solid transparent;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(14px);
+        }
+
+        .risk-banner-card.lower {
+            background: var(--risk-low-bg);
+            border-color: var(--risk-low-border);
+            box-shadow: 0 0 24px rgba(16, 185, 129, 0.25);
+        }
+
+        .risk-banner-card.intermediate {
+            background: var(--risk-med-bg);
+            border-color: var(--risk-med-border);
+            box-shadow: 0 0 24px rgba(245, 158, 11, 0.25);
+        }
+
+        .risk-banner-card.higher {
+            background: var(--risk-high-bg);
+            border-color: var(--risk-high-border);
+            box-shadow: 0 0 24px rgba(244, 63, 94, 0.25);
+        }
+
+        .risk-content-box {
+            flex: 1;
+        }
+
+        .risk-content-box p {
+            font-size: 0.74rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .risk-content-box h3 {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.015em;
+        }
+
+        /* 3-Stage Visual Risk Gauge Meter */
+        .risk-gauge-track {
+            margin-top: 12px;
+            display: flex;
+            gap: 6px;
+            max-width: 320px;
+        }
+
+        .gauge-segment {
+            height: 6px;
+            flex: 1;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .risk-banner-card.lower .gauge-segment.seg-1 {
+            background: var(--accent-emerald);
+            box-shadow: 0 0 8px var(--accent-emerald);
+        }
+
+        .risk-banner-card.intermediate .gauge-segment.seg-1,
+        .risk-banner-card.intermediate .gauge-segment.seg-2 {
+            background: var(--accent-amber);
+            box-shadow: 0 0 8px var(--accent-amber);
+        }
+
+        .risk-banner-card.higher .gauge-segment.seg-1,
+        .risk-banner-card.higher .gauge-segment.seg-2,
+        .risk-banner-card.higher .gauge-segment.seg-3 {
+            background: var(--accent-rose);
+            box-shadow: 0 0 8px var(--accent-rose);
+        }
+
+        .risk-badge-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Milestone Survival Probability Metric Cards */
+        .prob-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .prob-tile {
+            background: rgba(8, 13, 24, 0.85);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            padding: 20px 18px;
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .prob-tile:hover {
+            border-color: var(--accent-cyan);
+            box-shadow: var(--cyan-glow), 0 10px 28px rgba(0, 0, 0, 0.65);
+            transform: translateY(-3px);
+        }
+
+        .horizon-label {
+            font-size: 0.74rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--accent-cyan);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .prob-val {
+            font-size: 2.3rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1.1;
+            letter-spacing: -0.025em;
+        }
+
+        .prob-progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 9999px;
+            margin: 12px 0 8px;
+            overflow: hidden;
+        }
+
+        .prob-progress-fill {
+            height: 100%;
+            border-radius: 9999px;
+            background: linear-gradient(90deg, #0284c7, #38bdf8);
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .prob-caption {
+            font-size: 0.73rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Survival Curve Chart Canvas */
+        .chart-box {
+            background: rgba(8, 13, 24, 0.85);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+
+        .chart-top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .chart-top-bar h4 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-legend {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-indicator {
+            display: inline-block;
+            width: 16px;
+            height: 3px;
+            background: var(--accent-cyan);
+            border-radius: 2px;
+            margin-right: 6px;
+            vertical-align: middle;
+            box-shadow: 0 0 8px var(--accent-cyan);
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            height: 300px;
+        }
+
+        #survivalCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: crosshair;
+        }
+
+        /* Interactive Canvas Hover Tooltip */
+        #chartTooltip {
+            position: absolute;
+            display: none;
+            pointer-events: none;
+            background: rgba(9, 15, 27, 0.92);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--accent-cyan);
+            border-radius: var(--radius-sm);
+            padding: 6px 10px;
+            font-size: 0.74rem;
+            color: var(--text-primary);
+            box-shadow: var(--cyan-glow);
+            font-family: 'JetBrains Mono', monospace;
+            z-index: 100;
+            transform: translate(-50%, -120%);
+            white-space: nowrap;
+        }
+
+        /* Empty Awaiting Input State */
+        .empty-placeholder {
+            text-align: center;
+            padding: 56px 28px;
+            background: rgba(8, 13, 24, 0.65);
+            border: 1px dashed var(--card-border);
+            border-radius: var(--radius-lg);
+            margin-bottom: 24px;
+        }
+
+        .empty-icon-ring {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: rgba(13, 21, 37, 0.95);
+            border: 1px solid var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 18px;
+            color: var(--accent-cyan);
+            box-shadow: var(--cyan-glow);
+            animation: pulse-ring 3s infinite;
+        }
+
+        .empty-placeholder h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .empty-placeholder p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            max-width: 520px;
+            margin: 0 auto 20px;
+            line-height: 1.55;
+        }
+
+        .instruction-steps {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            max-width: 580px;
+            margin: 0 auto;
+        }
+
+        .step-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(13, 21, 37, 0.8);
+            border: 1px solid var(--card-border-subtle);
+            border-radius: 9999px;
+            padding: 6px 14px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .step-num {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            color: #060a12;
+            font-weight: 800;
+            font-size: 0.68rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* =========================================================
+           MODEL BENCHMARK & COMPARISON TABLE
+        ========================================================= */
+        .benchmark-section {
+            border-top: 1px solid var(--card-border-subtle);
+            padding-top: 22px;
+        }
+
+        .benchmark-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .benchmark-header h3 {
+            font-size: 0.98rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .clinical-table-wrapper {
+            overflow-x: auto;
+            border: 1px solid var(--card-border-subtle);
+            border-radius: var(--radius-md);
+            background: rgba(8, 13, 24, 0.85);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .clinical-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.81rem;
+            text-align: left;
+        }
+
+        .clinical-table th {
+            background: #070c16;
+            color: var(--text-secondary);
+            font-weight: 600;
+            padding: 13px 16px;
+            border-bottom: 1px solid var(--card-border-subtle);
+            letter-spacing: 0.02em;
+        }
+
+        .clinical-table td {
+            padding: 13px 16px;
+            color: var(--text-primary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+        }
+
+        .clinical-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .clinical-table tr.selected-row {
+            background: rgba(56, 189, 248, 0.09);
+        }
+
+        .clinical-table tr.selected-row td:first-child {
+            border-left: 3px solid var(--accent-cyan);
+        }
+
+        .badge-selected {
+            display: inline-block;
+            background: rgba(13, 21, 37, 0.9);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 8px;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+        }
+
+        /* =========================================================
+           CLINICAL FOOTER
+        ========================================================= */
+        .clinical-footer {
+            position: relative;
+            z-index: 10;
+            background: var(--bg-header);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-top: 1px solid var(--card-border);
+            padding: 26px 28px;
+            text-align: center;
+            font-size: 0.79rem;
+            color: var(--text-muted);
+            line-height: 1.65;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .footer-note {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .footer-note strong {
+            color: var(--text-primary);
+        }
+
+        .footer-note em {
+            color: var(--text-secondary);
+            font-style: normal;
+        }
+
+        /* =========================================================
+           RESPONSIVE VIEWPORT ADAPTATIONS
+        ========================================================= */
+        @media (max-width: 1120px) {
+            .workspace-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .cohort-banner {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                background-position: center center;
+                background-attachment: scroll;
+            }
+
+            .navbar-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 14px;
+                padding: 16px 20px;
+            }
+
+            .main-container {
+                padding: 18px 16px 48px;
+            }
+
+            .cohort-banner {
+                grid-template-columns: 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .prob-metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .presets-bar {
+                justify-content: stretch;
+            }
+
+            .preset-btn {
+                flex: 1;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    {% set active_model = (result.model if result and result.model else selected_model) %}
+
+    <!-- TOP CLINICAL NAVIGATION BAR -->
+    <header class="top-navbar">
+        <div class="navbar-content">
+            <div class="brand-section">
+                <div class="brand-icon-wrapper" title="NCCTG Precision Oncology Platform">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>
+                        NCCTG Lung Cancer Survival Prognostic Platform
+                        <span class="research-tag">Academic Research AI</span>
+                    </h1>
+                    <p>Clinical-Grade Multi-Model Survival Analysis &amp; Individualized Prognosis System</p>
+                </div>
+            </div>
+            <div class="status-strip">
+                <div class="status-pill">
+                    <span class="pulse-dot"></span>
+                    <span>System Operational</span>
+                </div>
+                <div class="status-pill engine-pill">
+                    <span>Active Engine: <strong>{{ active_model }}</strong></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+
+        <!-- COHORT SUMMARY STAT BANNER -->
+        <div class="cohort-banner">
+            <div class="cohort-card blue-metric">
+                <div class="cohort-icon-box">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                </div>
+                <div class="cohort-meta">
+                    <div class="value">{{ rows }}</div>
+                    <div class="label">
+                        Total Cohort Patients
+                        <span class="cohort-badge">NCCTG 1994</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cohort-card red-metric">
+                <div class="cohort-icon-box">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                </div>
+                <div class="cohort-meta">
+                    <div class="value">{{ events }}</div>
+                    <div class="label">
+                        Observed Deaths
+                        <span class="cohort-badge" style="color:var(--accent-rose);">72.4%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cohort-card green-metric">
+                <div class="cohort-icon-box">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M20 6L9 17l-5-5"></path>
+                    </svg>
+                </div>
+                <div class="cohort-meta">
+                    <div class="value">{{ censored }}</div>
+                    <div class="label">
+                        Censored Survivals
+                        <span class="cohort-badge" style="color:var(--accent-emerald);">27.6%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cohort-card blue-metric">
+                <div class="cohort-icon-box">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="9" y1="21" x2="9" y2="9"></line>
+                    </svg>
+                </div>
+                <div class="cohort-meta">
+                    <div class="value">{{ train_rows }} / {{ test_rows }}</div>
+                    <div class="label">
+                        Train / Test Split
+                        <span class="cohort-badge">80 : 20</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACADEMIC RESEARCH PROTOTYPE DISCLAIMER -->
+        <div class="disclaimer-banner" role="alert">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:var(--accent-amber); flex-shrink:0;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <div>
+                <strong>Academic Research Prototype:</strong> Survival estimates and prognostic risk bands are experimental calculations based on historical NCCTG trial data for research and educational purposes only. This tool is not a clinically validated medical device and must not be used for medical decisions, diagnosis, or clinical treatment planning.
+            </div>
+        </div>
+
+        {% if error %}
+        <div class="error-alert" id="error-message">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <div><strong>Validation Error:</strong> {{ error }}</div>
+        </div>
+        {% endif %}
+
+        <div class="workspace-grid">
+
+            <!-- LEFT COLUMN: PATIENT FEATURES FORM -->
+            <section class="card">
+                <div class="card-header-styled">
+                    <div>
+                        <h2>
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <polyline points="16 11 18 13 22 9"></polyline>
+                            </svg>
+                            Patient Clinical Parameters
+                        </h2>
+                        <p>Input individualized oncological, physical, and metabolic indicators</p>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- QUICK DEMONSTRATION PROFILES -->
+                    <div class="presets-bar">
+                        <span class="preset-title">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                            </svg>
+                            Presets:
+                        </span>
+                        <button type="button" class="preset-btn" onclick="applyPreset('median')"
+                            title="Apply median representative cohort values">
+                            <span>Median Cohort</span>
+                        </button>
+                        <button type="button" class="preset-btn" onclick="applyPreset('low_risk')"
+                            title="Apply high performance, low-risk parameters">
+                            <span>Low Risk</span>
+                        </button>
+                        <button type="button" class="preset-btn" onclick="applyPreset('high_risk')"
+                            title="Apply advanced age, impaired performance parameters">
+                            <span>High Risk</span>
+                        </button>
+                        <span id="presetToast" class="preset-toast">Preset loaded!</span>
+                    </div>
+
+                    <form id="prediction-form" method="POST" action="/">
+
+                        <div class="form-grid">
+
+                            <!-- Selected Survival Distribution -->
+                            <div class="form-group full-width">
+                                <label class="form-label" for="selected_model">
+                                    Selected Survival Distribution
+                                    <span class="scale-hint">Optimal Fit</span>
+                                </label>
+                                <select id="selected_model" name="selected_model" class="form-control" disabled
+                                    style="cursor: default; opacity: 1; -webkit-text-fill-color: var(--text-primary); color: var(--text-primary); background-color: var(--bg-input); border-color: rgba(56, 189, 248, 0.4);">
+                                    <option value="Cox PH" {% if active_model == 'Cox PH' %}selected{% endif %}>Cox Proportional Hazards</option>
+                                    <option value="Weibull AFT" {% if active_model == 'Weibull AFT' %}selected{% endif %}>Weibull AFT</option>
+                                    <option value="Exponential" {% if 'Exponential' in active_model %}selected{% endif %}>Exponential</option>
+                                </select>
+                                <span class="field-desc">Optimal distribution determined automatically via cross-validation in training metadata.</span>
+                            </div>
+
+                            <!-- Age -->
+                            <div class="form-group">
+                                <label class="form-label" for="age">
+                                    Patient Age
+                                    <span class="scale-hint">Years [18-100]</span>
+                                </label>
+                                <input type="number" id="age" name="age" class="form-control" min="18" max="100"
+                                    step="1" required value="{{ form_values.get('age', 63) }}">
+                                <span class="field-desc">Cohort median: 63 years</span>
+                            </div>
+
+                            <!-- Biological Sex -->
+                            <div class="form-group">
+                                <label class="form-label" for="sex">
+                                    Biological Sex
+                                    <span class="scale-hint">Categorical</span>
+                                </label>
+                                <select id="sex" name="sex" class="form-control" required>
+                                    <option value="Male" {% if form_values.get('sex')==0 or
+                                        form_values.get('sex')=='Male' or not form_values %}selected{% endif %}>Male
+                                        (Code 1)</option>
+                                    <option value="Female" {% if form_values.get('sex')==1 or
+                                        form_values.get('sex')=='Female' %}selected{% endif %}>Female (Code 2)</option>
+                                </select>
+                                <span class="field-desc">NCCTG covariate coding standard</span>
+                            </div>
+
+                            <!-- Physician ECOG -->
+                            <div class="form-group full-width">
+                                <label class="form-label" for="ph_ecog">
+                                    Physician ECOG Performance Score
+                                    <span class="scale-hint">Ordinal [0 - 3]</span>
+                                </label>
+                                <select id="ph_ecog" name="ph_ecog" class="form-control" required>
+                                    <option value="0" {% if form_values.get('ph.ecog')==0 %}selected{% endif %}>0 -
+                                        Asymptomatic (Fully active, no restriction)</option>
+                                    <option value="1" {% if form_values.get('ph.ecog')==1 or not form_values
+                                        %}selected{% endif %}>1 - Symptomatic, Ambulatory (Light work capable)</option>
+                                    <option value="2" {% if form_values.get('ph.ecog')==2 %}selected{% endif %}>2 - In
+                                        bed &lt; 50% day (Capable of all self-care)</option>
+                                    <option value="3" {% if form_values.get('ph.ecog')==3 %}selected{% endif %}>3 - In
+                                        bed &gt; 50% day (Limited self-care)</option>
+                                </select>
+                                <span class="field-desc">Strongest prognostic performance predictor in clinical lung oncology</span>
+                            </div>
+
+                            <!-- Physician Karnofsky -->
+                            <div class="form-group">
+                                <label class="form-label" for="ph_karno">
+                                    Physician Karnofsky
+                                    <span class="scale-hint">[30 - 100%]</span>
+                                </label>
+                                <input type="number" id="ph_karno" name="ph_karno" class="form-control" min="30"
+                                    max="100" step="10" required value="{{ form_values.get('ph.karno', 80) }}">
+                                <span class="field-desc">Physician-rated functional rating</span>
+                            </div>
+
+                            <!-- Patient Karnofsky -->
+                            <div class="form-group">
+                                <label class="form-label" for="pat_karno">
+                                    Patient Karnofsky
+                                    <span class="scale-hint">[30 - 100%]</span>
+                                </label>
+                                <input type="number" id="pat_karno" name="pat_karno" class="form-control" min="30"
+                                    max="100" step="10" required value="{{ form_values.get('pat.karno', 80) }}">
+                                <span class="field-desc">Self-reported functional rating</span>
+                            </div>
+
+                            <!-- Meal Calorie Intake -->
+                            <div class="form-group">
+                                <label class="form-label" for="meal_cal">
+                                    Meal Calorie Intake
+                                    <span class="scale-hint">kcal / day</span>
+                                </label>
+                                <input type="number" id="meal_cal" name="meal_cal" class="form-control" min="0"
+                                    max="3000" step="25" required value="{{ form_values.get('meal.cal', 975) }}">
+                                <span class="field-desc">Nutritional intake at meals</span>
+                            </div>
+
+                            <!-- Weight Loss -->
+                            <div class="form-group">
+                                <label class="form-label" for="wt_loss">
+                                    Weight Loss (6 Mo)
+                                    <span class="scale-hint">Pounds (lbs)</span>
+                                </label>
+                                <input type="number" id="wt_loss" name="wt_loss" class="form-control" min="0" max="80"
+                                    step="1" required value="{{ form_values.get('wt.loss', 7) }}">
+                                <span class="field-desc">Cachexia / metabolic indicator</span>
+                            </div>
+
+                        </div>
+
+                        <!-- Primary Action Button -->
+                        <button type="submit" id="calculate-btn" class="btn-submit-primary">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2"
+                                viewBox="0 0 24 24">
+                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                            </svg>
+                            Calculate Survival Trajectory &amp; Prognosis
+                        </button>
+                    </form>
+
+                    <!-- Download Official PDF Report Button -->
+                    {% if result %}
+                    <form id="download-form" method="POST" action="/download-report">
+                        <input type="hidden" name="age" value="{{ result.patient.age }}">
+                        <input type="hidden" name="sex" value="{{ 'Male' if result.patient.sex == 0 else 'Female' }}">
+                        <input type="hidden" name="ph_ecog" value="{{ result.patient['ph.ecog'] }}">
+                        <input type="hidden" name="ph_karno" value="{{ result.patient['ph.karno'] }}">
+                        <input type="hidden" name="pat_karno" value="{{ result.patient['pat.karno'] }}">
+                        <input type="hidden" name="meal_cal" value="{{ result.patient['meal.cal'] }}">
+                        <input type="hidden" name="wt_loss" value="{{ result.patient['wt.loss'] }}">
+                        <button type="submit" id="download-pdf-btn" class="btn-download-pdf">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10 9 9 9 8 9"></polyline>
+                            </svg>
+                            Download Official Clinical PDF Report
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- RIGHT COLUMN: PREDICTION RESULTS, SURVIVAL TRAJECTORY & BENCHMARK -->
+            <section class="card">
+                <div class="card-header-styled">
+                    <div>
+                        <h2>
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                            </svg>
+                            Prognostic Survival Estimation
+                        </h2>
+                        <p>Parametric estimation via active engine: <strong style="color:var(--accent-cyan);">{{ active_model }}</strong></p>
+                    </div>
+                    {% if result %}
+                    <span class="status-pill" style="border-color:var(--accent-cyan); color:var(--text-primary);">
+                        3-Year Patient Trajectory
+                    </span>
+                    {% endif %}
+                </div>
+
+                <div class="card-body">
+                    {% if result %}
+
+                    <!-- RISK STRATIFICATION CARD -->
+                    {% set rclass = 'lower' if 'Lower' in result.risk else ('intermediate' if 'Intermediate' in
+                    result.risk else 'higher') %}
+                    <div class="risk-banner-card {{ rclass }}" id="risk-banner">
+                        <div class="risk-content-box">
+                            <p>PROGNOSTIC RISK STRATIFICATION</p>
+                            <h3>{{ result.risk }}</h3>
+                            <div class="risk-gauge-track">
+                                <div class="gauge-segment seg-1" title="Lower Risk Band"></div>
+                                <div class="gauge-segment seg-2" title="Intermediate Risk Band"></div>
+                                <div class="gauge-segment seg-3" title="Higher Risk Band"></div>
+                            </div>
+                        </div>
+                        <div class="risk-badge-icon">
+                            {% if 'Lower' in result.risk %}
+                            &#x2705;
+                            {% elif 'Intermediate' in result.risk %}
+                            &#x26A0;&#xFE0F;
+                            {% else %}
+                            &#x1F6A8;
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- 1-YR, 2-YR, 3-YR PROBABILITY TILES -->
+                    <div class="prob-metrics-grid">
+                        <div class="prob-tile" id="card-1yr">
+                            <div class="horizon-label">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                1-Year Survival
+                            </div>
+                            <div class="prob-val" id="prob-1yr">{{ result.probabilities['1 year'] }}%</div>
+                            <div class="prob-progress-bar">
+                                <div class="prob-progress-fill" style="width: {{ result.probabilities['1 year'] }}%;"></div>
+                            </div>
+                            <div class="prob-caption">365-Day Landmark</div>
+                        </div>
+
+                        <div class="prob-tile" id="card-2yr">
+                            <div class="horizon-label">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                2-Year Survival
+                            </div>
+                            <div class="prob-val" id="prob-2yr">{{ result.probabilities['2 years'] }}%</div>
+                            <div class="prob-progress-bar">
+                                <div class="prob-progress-fill" style="width: {{ result.probabilities['2 years'] }}%;"></div>
+                            </div>
+                            <div class="prob-caption">730-Day Landmark</div>
+                        </div>
+
+                        <div class="prob-tile" id="card-3yr">
+                            <div class="horizon-label">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                3-Year Survival
+                            </div>
+                            <div class="prob-val" id="prob-3yr">{{ result.probabilities['3 years'] }}%</div>
+                            <div class="prob-progress-bar">
+                                <div class="prob-progress-fill" style="width: {{ result.probabilities['3 years'] }}%;"></div>
+                            </div>
+                            <div class="prob-caption">1095-Day Landmark</div>
+                        </div>
+                    </div>
+
+                    <!-- PARAMETRIC SURVIVAL FUNCTION S(t) -->
+                    <div class="chart-box">
+                        <div class="chart-top-bar">
+                            <h4>
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path d="M3 3v18h18" />
+                                    <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" />
+                                </svg>
+                                Parametric Survival Function S(t)
+                            </h4>
+                            <div class="chart-legend">
+                                <span><span class="legend-indicator"></span> Patient S(t) Curve</span>
+                                <span style="color:var(--text-muted);">&#x25CF; 1y / 2y / 3y Milestones</span>
+                            </div>
+                        </div>
+                        <div class="canvas-wrapper">
+                            <canvas id="survivalCanvas" width="700" height="300"></canvas>
+                            <div id="chartTooltip"></div>
+                        </div>
+                    </div>
+
+                    {% else %}
+                    <!-- AWAITING INPUTS HERO STATE -->
+                    <div class="empty-placeholder">
+                        <div class="empty-icon-ring">
+                            <svg width="34" height="34" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path d="M3 3v18h18" />
+                                <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" />
+                            </svg>
+                        </div>
+                        <h3>Ready for Patient Evaluation</h3>
+                        <p>Enter patient performance scores and clinical metrics on the left, then click
+                            <strong>Calculate Survival Trajectory &amp; Prognosis</strong> to generate the individualized
+                            3-year survival curve.
+                        </p>
+                        <div class="instruction-steps">
+                            <div class="step-pill">
+                                <span class="step-num">1</span>
+                                <span>Input Clinical Parameters</span>
+                            </div>
+                            <div class="step-pill">
+                                <span class="step-num">2</span>
+                                <span>Compute Survival Function</span>
+                            </div>
+                            <div class="step-pill">
+                                <span class="step-num">3</span>
+                                <span>Export Clinical PDF</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- MODEL BENCHMARK & COMPARISON SECTION -->
+                    <div class="benchmark-section">
+                        <div class="benchmark-header">
+                            <div>
+                                <h3>
+                                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                                    </svg>
+                                    Model Benchmark &amp; Statistical Comparison
+                                </h3>
+                                <span style="font-size:0.76rem; color:var(--text-muted);">Independent held-out validation cohort (N = {{ test_rows }} patients)</span>
+                            </div>
+                        </div>
+
+                        <div class="clinical-table-wrapper">
+                            <table class="clinical-table" id="models-table">
+                                <thead>
+                                    <tr>
+                                        <th>Model Specification</th>
+                                        <th>Harrell's C-index</th>
+                                        <th>AIC Metric</th>
+                                        <th>Log-Likelihood</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for name, vals in metrics.items() %}
+                                    <tr class="{% if name == active_model or (name == 'Exponential PH' and 'Exponential' in active_model) %}selected-row{% endif %}">
+                                        <td>
+                                            <strong>{{ name }}</strong>
+                                            {% if name == active_model or (name == 'Exponential PH' and 'Exponential' in active_model) %}
+                                            <span class="badge-selected">Selected</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if vals.c_index is not none %}
+                                            <span style="font-weight:700; color:var(--accent-cyan);">{{
+                                                "%.4f"|format(vals.c_index) }}</span>
+                                            {% else %}
+                                            <span style="color:var(--text-muted);">N/A (baseline)</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if vals.aic is not none %}
+                                            {{ "%.1f"|format(vals.aic) }}
+                                            {% else %}
+                                            <span style="color:var(--text-muted);">N/A</span>
+                                            {% endif %}
+                                            {% if name == 'Cox PH' %}<span
+                                                style="font-size:0.7rem; color:var(--text-muted);"> (partial)</span>{%
+                                            endif %}
+                                        </td>
+                                        <td>
+                                            {% if vals.log_likelihood is not none %}
+                                            {{ "%.1f"|format(vals.log_likelihood) }}
+                                            {% else %}
+                                            <span style="color:var(--text-muted);">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <footer class="clinical-footer">
+        <div class="footer-note">
+            <strong>NCCTG Lung Cancer Survival Prognostic Platform</strong> &bull; Academic &amp; Research Prototype.<br>
+            Models trained on the historical North Central Cancer Treatment Group (NCCTG) Lung Cancer Cohort (N = {{
+            rows }}).<br>
+            <em>Notice: Survival trajectories and prognostic risk bands are statistical estimates designed for research
+                demonstrations and are not clinically validated medical recommendations.</em>
+        </div>
+    </footer>
+
+    <script>
+        // Clinical Demo Profile Presets for College Demonstration
+        function applyPreset(type) {
+            const toast = document.getElementById('presetToast');
+            if (type === 'median') {
+                document.getElementById('age').value = 63;
+                document.getElementById('sex').value = 'Male';
+                document.getElementById('ph_ecog').value = '1';
+                document.getElementById('ph_karno').value = 80;
+                document.getElementById('pat_karno').value = 80;
+                document.getElementById('meal_cal').value = 975;
+                document.getElementById('wt_loss').value = 7;
+                if (toast) toast.textContent = 'Median Cohort Profile applied';
+            } else if (type === 'low_risk') {
+                document.getElementById('age').value = 52;
+                document.getElementById('sex').value = 'Female';
+                document.getElementById('ph_ecog').value = '0';
+                document.getElementById('ph_karno').value = 100;
+                document.getElementById('pat_karno').value = 100;
+                document.getElementById('meal_cal').value = 1250;
+                document.getElementById('wt_loss').value = 0;
+                if (toast) toast.textContent = 'Low-Risk Profile applied';
+            } else if (type === 'high_risk') {
+                document.getElementById('age').value = 74;
+                document.getElementById('sex').value = 'Male';
+                document.getElementById('ph_ecog').value = '2';
+                document.getElementById('ph_karno').value = 60;
+                document.getElementById('pat_karno').value = 60;
+                document.getElementById('meal_cal').value = 600;
+                document.getElementById('wt_loss').value = 18;
+                if (toast) toast.textContent = 'High-Risk Profile applied';
+            }
+
+            if (toast) {
+                toast.classList.add('visible');
+                setTimeout(() => toast.classList.remove('visible'), 2400);
+            }
+        }
+    </script>
+
+    {% if result %}
+    <script>
+        // High-Precision Retina-Aware Canvas Survival Curve Renderer with Interactive Hover Tooltip
+        (function() {
+            // Synchronize the disabled dropdown element in DOM with active model
+            const modelSelect = document.getElementById('selected_model');
+            if (modelSelect) {
+                const current = {{ active_model | tojson | safe }};
+                for (let i = 0; i < modelSelect.options.length; i++) {
+                    if (modelSelect.options[i].value === current || 
+                        (modelSelect.options[i].value.includes('Exponential') && current.includes('Exponential'))) {
+                        modelSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            const curveData = {{ result.curve | tojson | safe }};
+            const canvas = document.getElementById('survivalCanvas');
+            const tooltip = document.getElementById('chartTooltip');
+            if (!canvas || !curveData || curveData.length === 0) return;
+
+            const ctx = canvas.getContext('2d');
+            let hoverPoint = null;
+
+            function renderChart() {
+                const dpr = window.devicePixelRatio || 1;
+                const rect = canvas.getBoundingClientRect();
+
+                canvas.width = rect.width * dpr;
+                canvas.height = 300 * dpr;
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.scale(dpr, dpr);
+
+                const width = rect.width;
+                const height = 300;
+                const padding = { top: 34, right: 36, bottom: 48, left: 58 };
+                const plotWidth = width - padding.left - padding.right;
+                const plotHeight = height - padding.top - padding.bottom;
+
+                const maxX = 1095; // 36 months (3 years)
+                const maxY = 1.0;
+
+                function toX(val) { return padding.left + (val / maxX) * plotWidth; }
+                function toY(val) { return padding.top + (1 - (val / maxY)) * plotHeight; }
+                function fromX(px) { return Math.max(0, Math.min(maxX, ((px - padding.left) / plotWidth) * maxX)); }
+
+                ctx.clearRect(0, 0, width, height);
+
+                // Horizontal Gridlines & Y-Axis Scale
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.12)';
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '500 11px Inter, sans-serif';
+                ctx.textAlign = 'right';
+
+                for (let y = 0; y <= 1.0; y += 0.2) {
+                    const py = toY(y);
+                    ctx.beginPath();
+                    ctx.moveTo(padding.left, py);
+                    ctx.lineTo(width - padding.right, py);
+                    ctx.stroke();
+                    ctx.fillText(Math.round(y * 100) + '%', padding.left - 10, py + 4);
+                }
+
+                // Vertical Gridlines & X-Axis Time Intervals
+                ctx.textAlign = 'center';
+                const ticks = [
+                    { d: 0, label: '0d' },
+                    { d: 182, label: '6 mo' },
+                    { d: 365, label: '1 Year (365d)' },
+                    { d: 547, label: '1.5 yr' },
+                    { d: 730, label: '2 Years (730d)' },
+                    { d: 912, label: '2.5 yr' },
+                    { d: 1095, label: '3 Years (1095d)' }
+                ];
+
+                ticks.forEach(t => {
+                    const px = toX(t.d);
+                    ctx.beginPath();
+                    ctx.moveTo(px, padding.top);
+                    ctx.lineTo(px, height - padding.bottom);
+                    ctx.stroke();
+                    ctx.fillText(t.label, px, height - padding.bottom + 20);
+                });
+
+                // Gradient Fill Under the Curve
+                const grad = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom);
+                grad.addColorStop(0, 'rgba(56, 189, 248, 0.35)');
+                grad.addColorStop(0.65, 'rgba(6, 182, 212, 0.12)');
+                grad.addColorStop(1, 'rgba(2, 132, 199, 0.01)');
+
+                ctx.beginPath();
+                ctx.moveTo(toX(curveData[0].x), height - padding.bottom);
+                curveData.forEach(p => ctx.lineTo(toX(p.x), toY(p.y)));
+                ctx.lineTo(toX(curveData[curveData.length - 1].x), height - padding.bottom);
+                ctx.closePath();
+                ctx.fillStyle = grad;
+                ctx.fill();
+
+                // Main Trajectory Curve Line with Glowing Stroke
+                ctx.beginPath();
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 3.2;
+                ctx.shadowColor = 'rgba(56, 189, 248, 0.65)';
+                ctx.shadowBlur = 10;
+                curveData.forEach((p, i) => {
+                    const px = toX(p.x);
+                    const py = toY(p.y);
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                });
+                ctx.stroke();
+
+                // Reset Shadow
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+
+                // Landmark Milestone Pins (1y, 2y, 3y)
+                const milestones = [
+                    { days: 365, prob: {{ result.probabilities['1 year'] }} / 100, label: "1y: {{ result.probabilities['1 year'] }}%" },
+                    { days: 730, prob: {{ result.probabilities['2 years'] }} / 100, label: "2y: {{ result.probabilities['2 years'] }}%" },
+                    { days: 1095, prob: {{ result.probabilities['3 years'] }} / 100, label: "3y: {{ result.probabilities['3 years'] }}%" }
+                ];
+
+                milestones.forEach(m => {
+                    const cx = toX(m.days);
+                    const cy = toY(m.prob);
+
+                    // Landmark Pin Outer Glow Ring
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+                    ctx.fillStyle = '#080d1a';
+                    ctx.fill();
+                    ctx.lineWidth = 2.5;
+                    ctx.strokeStyle = '#38bdf8';
+                    ctx.stroke();
+
+                    // Pin Core Dot
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fill();
+
+                    // Label Box
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '700 11px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    const offset = (m.days === 1095) ? -20 : (cy > height - 90 ? -16 : -14);
+                    ctx.fillText(m.label, cx, cy + offset);
+                });
+
+                // Interactive Crosshair & Tooltip Point on Hover
+                if (hoverPoint) {
+                    const hx = toX(hoverPoint.x);
+                    const hy = toY(hoverPoint.y);
+
+                    // Vertical guide line
+                    ctx.beginPath();
+                    ctx.setLineDash([4, 4]);
+                    ctx.strokeStyle = 'rgba(56, 189, 248, 0.65)';
+                    ctx.lineWidth = 1.2;
+                    ctx.moveTo(hx, padding.top);
+                    ctx.lineTo(hx, height - padding.bottom);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    // Highlighting Point
+                    ctx.beginPath();
+                    ctx.arc(hx, hy, 5.5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+
+            renderChart();
+
+            // Interactive Tooltip Handling
+            canvas.addEventListener('mousemove', function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                const paddingLeft = 58;
+                const paddingRight = 36;
+                const plotWidth = rect.width - paddingLeft - paddingRight;
+
+                if (mouseX >= paddingLeft && mouseX <= rect.width - paddingRight) {
+                    const day = Math.round(((mouseX - paddingLeft) / plotWidth) * 1095);
+                    // Find closest point in curveData
+                    let closest = curveData[0];
+                    let minDiff = Infinity;
+                    for (let p of curveData) {
+                        const diff = Math.abs(p.x - day);
+                        if (diff < minDiff) {
+                            minDiff = diff;
+                            closest = p;
+                        }
+                    }
+
+                    hoverPoint = closest;
+                    renderChart();
+
+                    if (tooltip) {
+                        tooltip.style.display = 'block';
+                        tooltip.style.left = (paddingLeft + (closest.x / 1095) * plotWidth) + 'px';
+                        const py = 34 + (1 - closest.y) * (300 - 34 - 48);
+                        tooltip.style.top = (py - 10) + 'px';
+                        tooltip.innerHTML = `<strong>Day ${Math.round(closest.x)}</strong>: ${(closest.y * 100).toFixed(1)}% Survival`;
+                    }
+                } else {
+                    hoverPoint = null;
+                    renderChart();
+                    if (tooltip) tooltip.style.display = 'none';
+                }
+            });
+
+            canvas.addEventListener('mouseleave', function() {
+                hoverPoint = null;
+                renderChart();
+                if (tooltip) tooltip.style.display = 'none';
+            });
+
+            window.addEventListener('resize', function() {
+                renderChart();
+            });
+        })();
+    </script>
+    {% endif %}
+
+</body>
+
+</html>

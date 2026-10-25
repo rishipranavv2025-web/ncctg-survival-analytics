@@ -1,0 +1,95 @@
+{
+  "features": [
+    "age",
+    "sex",
+    "ph.ecog",
+    "ph.karno",
+    "pat.karno",
+    "meal.cal",
+    "wt.loss"
+  ],
+  "display_names": {
+    "age": "Age",
+    "sex": "Sex",
+    "ph.ecog": "ECOG score",
+    "ph.karno": "Physician Karnofsky",
+    "pat.karno": "Patient Karnofsky",
+    "meal.cal": "Meal calories",
+    "wt.loss": "Weight loss"
+  },
+  "medians": {
+    "age": 63.0,
+    "sex": 0.0,
+    "ph.ecog": 1.0,
+    "ph.karno": 80.0,
+    "pat.karno": 80.0,
+    "meal.cal": 1009.0,
+    "wt.loss": 5.5
+  },
+  "selected_model": "Weibull AFT",
+  "selection_method": "Highest mean 5-fold stratified CV C-index on training partition",
+  "cv_mean_c_index": {
+    "Cox PH": 0.6508711888461775,
+    "Weibull AFT": 0.6516447861994916,
+    "Exponential PH": 0.6463943830986535
+  },
+  "cv_fold_c_index": {
+    "Cox PH": [
+      0.580110497237569,
+      0.6351851851851852,
+      0.7109207708779444,
+      0.7293868921775899,
+      0.5987525987525988
+    ],
+    "Weibull AFT": [
+      0.585635359116022,
+      0.6333333333333333,
+      0.715203426124197,
+      0.733615221987315,
+      0.5904365904365905
+    ],
+    "Exponential PH": [
+      0.574585635359116,
+      0.6370370370370371,
+      0.7109207708779444,
+      0.7293868921775899,
+      0.58004158004158
+    ]
+  },
+  "metrics": {
+    "Kaplan-Meier": {
+      "c_index": null,
+      "aic": null,
+      "log_likelihood": null,
+      "cv_c_index": null
+    },
+    "Cox PH": {
+      "c_index": 0.558974358974359,
+      "aic": 1121.2758887323453,
+      "log_likelihood": -553.6379443661726,
+      "cv_c_index": 0.6508711888461775
+    },
+    "Weibull AFT": {
+      "c_index": 0.558974358974359,
+      "aic": 1823.142340785328,
+      "log_likelihood": -902.571170392664,
+      "cv_c_index": 0.6516447861994916
+    },
+    "Exponential PH": {
+      "c_index": 0.5576923076923077,
+      "aic": 1840.8971651135516,
+      "log_likelihood": -912.4485825567758,
+      "cv_c_index": 0.6463943830986535
+    }
+  },
+  "rows": 228,
+  "events": 165,
+  "censored": 63,
+  "train_rows": 182,
+  "test_rows": 46,
+  "random_state": 42,
+  "test_size": 0.2,
+  "imputation": "Median values fitted separately within each CV training fold; final medians fitted on final training partition only",
+  "c_index_definition": "lifelines concordance_index; higher predicted score means longer survival. Risk scores are negated where needed.",
+  "aic_note": "Cox AIC_partial_ uses partial likelihood and is not directly comparable to full-likelihood AIC values from parametric models."
+}
